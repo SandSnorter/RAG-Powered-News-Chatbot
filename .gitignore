@@ -1,0 +1,2 @@
+# Ignore local database storage
+qdrant_storage/
