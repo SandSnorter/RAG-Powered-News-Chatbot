@@ -4,7 +4,6 @@ import { QdrantClient } from "@qdrant/js-client-rest";
 import { GoogleGenAI } from "@google/genai";
 import { createClient } from 'redis';
 import { Chat } from "../models/Chat";
-import { AuthRequest } from '../types';
 
 interface Message {
     sender: 'user' | 'bot';
@@ -32,31 +31,25 @@ if (!GEMINI_API_KEY) {
 }
 const genAI = new GoogleGenAI({apiKey: GEMINI_API_KEY});
 
-export async function handleChat(req: AuthRequest, res: Response) {
+export async function handleChat(req: Request, res: Response) {
 
     try {
 
-        if (!req.user || !req.user.id) {
-            return res.status(401).json({ error: "User not authenticated correctly." });
-        }
-
-        const { message } = req.body;
-        const userId = req.user.id;
-
-        if (!message) {
-            return res.status(400).json({ error: "Missing 'message' in request body." });
+        const { message, sessionId } = req.body;
+        if (!message || !sessionId) {
+            return res.status(400).json({ error: "Missing 'message' or 'sessionId' in request body." });
         }
 
         // --- Step 1: Retrieve chat history from Redis ---
         if(!redisClient.isOpen) await redisClient.connect();
-        const historyJSON = await redisClient.get(`context:${userId}`);
+        const historyJSON = await redisClient.get(sessionId);
         let history: Message[] = historyJSON ? JSON.parse(historyJSON) : [];
 
         // --- Step 2: Generate embedding for the user's message ---
         const queryEmbedding = await getEmbedding(message, 'retrieval.query');
 
         // --- Step 3: Query Qdrant to get relevant context ---
-        const contextResults = await qdrant.search(
+        const context = await qdrant.search(
             COLLECTION_NAME,
             {
                 vector: queryEmbedding,
@@ -66,7 +59,7 @@ export async function handleChat(req: AuthRequest, res: Response) {
         );
 
         // Extract just the payload data from the search results
-        const contextPayLoads = contextResults.map(item => item.payload);
+        const contextPayLoads = context.map(item => item.payload);
 
         // --- Step 4: Construct a detailed prompt for the LLM ---
         const formattedHistory = history
@@ -126,20 +119,12 @@ export async function handleChat(req: AuthRequest, res: Response) {
         // End the stream
         res.end();
 
-        // --- Step 7: Permanent Storage (MongoDB) & Hot Storage (Redis) ---
-        const chatEntries = [
-            { userId, sender: 'user', text: message },
-            { userId, sender: 'bot', text: fullBotResponse, uniqueSources }
-        ];
-
-        Chat.insertMany(chatEntries).catch(err => console.error("Error saving chat to MongoDB:", err));
-
         // --- Step 7: Save Updated History to Redis ---
         history.push({sender: 'user', text: message});
         history.push({sender: 'bot', text: fullBotResponse});
 
         // Expire session after 1 hour to save memory
-        await redisClient.set(`context:${userId}`, JSON.stringify(history), {EX: 3600});
+        await redisClient.set(sessionId, JSON.stringify(history), {EX: 3600});
 
     } catch (error) {
 

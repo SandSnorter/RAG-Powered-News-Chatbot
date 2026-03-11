@@ -1,6 +1,8 @@
+import Navbar from "./components/Navbar"
+
 function App() {
   return (
-    <div className="font-extrabold">Hi</div>
+    <Navbar />
   )
 }
 

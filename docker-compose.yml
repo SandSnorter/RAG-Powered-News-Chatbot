@@ -13,3 +13,14 @@ services:
     image: redis/redis-stack-server:latest
     ports:
       - "6379:6379" # Redis port
+  
+  # MongoDB service for storing metadata or other application data
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  volumes:
+    mongo_data:

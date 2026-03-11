@@ -7,6 +7,10 @@
   "compilerOptions": {
     "esModuleInterop": true,
     "verbatimModuleSyntax": false,
-    "types": ["node"]
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
   }
 }
