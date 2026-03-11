@@ -8,9 +8,5 @@
     "esModuleInterop": true,
     "verbatimModuleSyntax": false,
     "types": ["node"],
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
   }
 }
