@@ -58,6 +58,10 @@ CLERK_PUBLISHABLE_KEY = your_key
 CLERK_SECRET_KEY = your_key
 CLERK_WEBHOOK_SECRET = your_key
 ```
+#### B. Create a `.env` file in the `client` directory:
+```env
+VITE_CLERK_PUBLISHABLE_KEY = your_key
+```
 
 ### 4. Boot Up Databases
 Ensure Docker is running, then spin up Qdrant and Redis:
