@@ -1,10 +1,12 @@
-import Home from "./pages/Home";
-import './index.css'
+import { Outlet } from 'react-router-dom';
+import './index.css';
 
 function App() {
   return (
-    <Home />
-  )
+    <div className="min-h-screen">
+      <Outlet />
+    </div>
+  );
 }
 
-export default App
+export default App;

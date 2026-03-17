@@ -22,11 +22,14 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@clerk/express": "^2.0.4",
+    "@clerk/react": "^6.1.0",
     "@google/genai": "^1.28.0",
     "@qdrant/qdrant-js": "^1.15.1",
     "@types/cors": "^2.8.19",
     "axios": "^1.13.5",
     "bcrypt": "^6.0.0",
+    "body-parser": "^2.2.2",
     "cheerio": "^1.1.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -34,6 +37,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.3.0",
     "redis": "^5.9.0",
+    "svix": "^1.87.0",
     "uuid": "^13.0.0"
   }
 }

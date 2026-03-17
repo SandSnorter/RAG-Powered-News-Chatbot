@@ -6,4 +6,5 @@ const LoginPage = () => (
     <SignIn path="/login" routing="path" signUpUrl="/signup" />
   </div>
 );
+
 export default LoginPage;

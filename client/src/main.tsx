@@ -13,9 +13,10 @@ const router = createBrowserRouter([
     path: "/",
     element: <App />,
     children: [
-      { path: "/", element: <Home /> }, 
-      { path: "/login", element: <LoginPage /> },
-      { path: "/signup", element: <SignUpPage /> }
+      // Using 'index: true' so Home renders at the "/" path automatically
+      { index: true, element: <Home /> }, 
+      { path: "login", element: <LoginPage /> },
+      { path: "signup", element: <SignUpPage /> }
     ]
   }
 ]);
