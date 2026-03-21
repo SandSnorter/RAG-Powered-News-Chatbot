@@ -1,6 +1,3 @@
-// CLAUDE: Flagged for deletion - reason: superseded by Sidebar.tsx and page-level navbars (Home.tsx, Chat.tsx header)
-// This component is no longer imported by any file.
-
 import { Link } from "react-router-dom";
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/react";
 

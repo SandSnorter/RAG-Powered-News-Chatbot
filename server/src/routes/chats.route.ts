@@ -54,7 +54,7 @@ router.get("/sessions/:sessionId", async (req: Request, res: Response) => {
 
         const sessionId = req.params.sessionId as string;
         const messages = await Chat.find({ userId, sessionId })
-            .sort({ createdAt: 1 })
+            .sort({ createdAt: 1, _id: 1 })
             .limit(100)
             .lean();
 

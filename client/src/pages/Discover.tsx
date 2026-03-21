@@ -96,7 +96,7 @@ export default function DiscoverPage() {
   if (!isLoaded) return null;
 
   return (
-    <div className="h-screen flex overflow-hidden bg-[#080b14]">
+    <div className="h-screen flex overflow-hidden bg-bg-base">
       {/* Sidebar */}
       <Sidebar
         sessions={emptySessions}
@@ -109,14 +109,14 @@ export default function DiscoverPage() {
       {/* Main content */}
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         {/* Header */}
-        <div className="sticky top-0 z-10 glass border-b border-white/[0.06] px-8 py-4">
+        <div className="sticky top-0 z-10 glass border-b border-white/6 px-8 py-4">
           <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-linear-to-br from-purple-500 to-blue-600 flex items-center justify-center">
               <Globe className="w-3.5 h-3.5 text-white" />
             </div>
             <div>
-              <h1 className="text-base font-semibold text-[#f0f6fc]">Discover</h1>
-              <p className="text-xs text-[#484f58]">Explore today&#39;s news by topic</p>
+              <h1 className="text-base font-semibold text-text-primary">Discover</h1>
+              <p className="text-xs text-text-muted">Explore today&#39;s news by topic</p>
             </div>
           </div>
         </div>
@@ -126,7 +126,7 @@ export default function DiscoverPage() {
           <section className="mb-10">
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp className="w-4 h-4 text-orange-400" />
-              <h2 className="text-sm font-semibold text-[#f0f6fc]">Trending Now</h2>
+              <h2 className="text-sm font-semibold text-text-primary">Trending Now</h2>
               <div className="flex items-center gap-1.5 ml-2 px-2 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/20">
                 <Zap className="w-2.5 h-2.5 text-orange-400" />
                 <span className="text-[10px] font-medium text-orange-400">Live</span>
@@ -137,7 +137,7 @@ export default function DiscoverPage() {
                 <button
                   key={topic}
                   onClick={() => goToChat(`Tell me about ${topic} in the news`)}
-                  className="px-3.5 py-1.5 rounded-full glass-surface border border-white/[0.07] text-sm text-[#8b949e] hover:text-[#f0f6fc] hover:border-purple-500/25 hover:bg-purple-500/[0.05] transition-all"
+                  className="px-3.5 py-1.5 rounded-full glass-surface border border-white/7 text-sm text-text-secondary hover:text-text-primary hover:border-purple-500/25 hover:bg-purple-500/5 transition-all"
                 >
                   {topic}
                 </button>
@@ -147,22 +147,22 @@ export default function DiscoverPage() {
 
           {/* Categories — click to open chat with category questions */}
           <section>
-            <h2 className="text-sm font-semibold text-[#f0f6fc] mb-4">Browse by Category</h2>
+            <h2 className="text-sm font-semibold text-text-primary mb-4">Browse by Category</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {CATEGORIES.map(cat => (
                 <button
                   key={cat.label}
                   onClick={() => goToChatWithCategory(cat)}
-                  className={`glass-card p-5 rounded-2xl border border-white/[0.06] bg-gradient-to-br ${cat.color} text-left group hover:border-opacity-40 transition-all duration-300`}
+                  className={`glass-card p-5 rounded-2xl border border-white/6 bg-linear-to-br ${cat.color} text-left group hover:border-opacity-40 transition-all duration-300`}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className={`w-9 h-9 ${cat.iconBg} rounded-xl flex items-center justify-center`}>
                       <cat.icon className={`w-4.5 h-4.5 ${cat.iconColor}`} />
                     </div>
-                    <ArrowRight className="w-4 h-4 text-[#484f58] group-hover:text-[#8b949e] group-hover:translate-x-0.5 transition-all" />
+                    <ArrowRight className="w-4 h-4 text-text-muted group-hover:text-text-secondary group-hover:translate-x-0.5 transition-all" />
                   </div>
-                  <h3 className="font-semibold text-[#f0f6fc] mb-1 text-sm">{cat.label}</h3>
-                  <p className="text-xs text-[#8b949e] leading-relaxed">{cat.desc}</p>
+                  <h3 className="font-semibold text-text-primary mb-1 text-sm">{cat.label}</h3>
+                  <p className="text-xs text-text-secondary leading-relaxed">{cat.desc}</p>
                 </button>
               ))}
             </div>

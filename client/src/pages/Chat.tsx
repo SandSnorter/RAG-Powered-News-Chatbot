@@ -26,23 +26,23 @@ export default function ChatPage() {
   // Load session list from backend on mount
   useEffect(() => {
     if (!isSignedIn) return;
-    fetchSessions();
-  }, [isSignedIn]);
-
-  const fetchSessions = useCallback(async () => {
-    try {
-      const token = await getToken();
-      const res = await fetch(`${API_URL}/api/chats/sessions`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setSessions(data.sessions || []);
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch(`${API_URL}/api/chats/sessions`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          setSessions(data.sessions || []);
+        }
+      } catch {
+        // sessions are optional — sidebar shows empty gracefully
       }
-    } catch {
-      // sessions are optional — sidebar shows empty gracefully
-    }
-  }, [getToken]);
+    })();
+    return () => { cancelled = true; };
+  }, [isSignedIn, getToken]);
 
   const handleNewChat = useCallback(() => {
     const newId = uuidv4();
@@ -116,7 +116,7 @@ export default function ChatPage() {
 
   if (!isLoaded) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#080b14]">
+      <div className="h-screen flex items-center justify-center bg-bg-base">
         <div className="flex gap-1.5">
           {[0, 150, 300].map(d => (
             <div key={d} className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
@@ -129,7 +129,7 @@ export default function ChatPage() {
   const currentMessages = sessionMessages.get(activeSessionId) ?? [];
 
   return (
-    <div className="h-screen flex overflow-hidden bg-[#080b14]">
+    <div className="h-screen flex overflow-hidden bg-bg-base">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-black/60 lg:hidden" onClick={() => setSidebarOpen(false)} />
@@ -149,13 +149,13 @@ export default function ChatPage() {
       {/* Main chat area */}
       <div className="flex-1 flex flex-col min-w-0 h-screen">
         {/* Top bar */}
-        <header className="flex-shrink-0 flex items-center gap-3 px-4 py-3 border-b border-white/[0.06] glass">
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-white/5 text-[#8b949e] hover:text-white transition-colors">
+        <header className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-white/6 glass">
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors">
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
+            <div className="w-6 h-6 rounded-lg bg-linear-to-br from-purple-500 to-blue-600 flex items-center justify-center">
               <Globe className="w-3 h-3 text-white" />
             </div>
             <span className="font-pacifico text-lg text-white">Nexus</span>
@@ -166,7 +166,7 @@ export default function ChatPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-[11px] font-medium text-emerald-400">Live</span>
             </div>
-            <span className="hidden sm:block text-xs text-[#484f58] px-2.5 py-1 rounded-full bg-white/[0.03] border border-white/[0.06]">
+            <span className="hidden sm:block text-xs text-text-muted px-2.5 py-1 rounded-full bg-white/3 border border-white/6">
               Gemini 2.5 Flash · RAG
             </span>
           </div>

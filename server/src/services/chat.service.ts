@@ -5,7 +5,7 @@ import { GoogleGenAI } from "@google/genai";
 import { Chat } from "../models/Chat";
 import { getAuth } from "@clerk/express";
 import { getEmbedding } from "./embedding.service";
-import redisClient from "../lib/redis.client"; // Shared singleton — no second connection
+import redisClient from "../lib/redis.client"; 
 
 interface Message {
     sender: "user" | "bot";
