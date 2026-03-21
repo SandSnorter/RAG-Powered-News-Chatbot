@@ -1,7 +1,9 @@
 import { Webhook } from "svix";
 import { User } from "../models/User";
 
-export const webhookHandler = async (req: any, res: any) => {
+import { Request, Response } from "express";
+
+export const webhookHandler = async (req: Request, res: Response) => {
     const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
     
     if (!WEBHOOK_SECRET) {
@@ -32,18 +34,19 @@ export const webhookHandler = async (req: any, res: any) => {
             case "user.created":
             case "user.updated": {
                 const email = email_addresses?.[0]?.email_address;
-                
-                // Upsert: Updates existing user by email, or creates a new one
+
+                // Upsert by clerkId (stable identifier) — updates name, photo, email
                 await User.findOneAndUpdate(
-                    { email }, 
-                    { 
-                        clerkId: id,
+                    { clerkId: id },
+                    {
+                        email,
                         firstName: first_name,
                         lastName: last_name,
-                        photoUrl: image_url 
+                        photoUrl: image_url
                     },
-                    { upsert: true, returnDocument: 'after' } 
+                    { upsert: true, new: true }
                 );
+                console.log(`[Webhook] ${evt.type}: ${email} (${id})`);
                 break;
             }
             case "user.deleted": {

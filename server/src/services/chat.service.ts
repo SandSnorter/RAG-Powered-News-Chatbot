@@ -2,10 +2,10 @@ import "dotenv/config";
 import { Request, Response } from "express";
 import { QdrantClient } from "@qdrant/js-client-rest";
 import { GoogleGenAI } from "@google/genai";
-import { createClient } from "redis";
 import { Chat } from "../models/Chat";
 import { getAuth } from "@clerk/express";
 import { getEmbedding } from "./embedding.service";
+import redisClient from "../lib/redis.client"; // Shared singleton — no second connection
 
 interface Message {
     sender: "user" | "bot";
@@ -28,13 +28,7 @@ const qdrant = new QdrantClient({ url: QDRANT_URL });
     }
 })();
 
-// Redis
-const redisClient = createClient({ url: process.env.REDIS_URL || "redis://localhost:6379" });
-redisClient.on("connect", () => console.log("[Redis] TCP connection established"));
-redisClient.on("ready", () => console.log("[Redis] Ready to process commands"));
-redisClient.on("error", (err) => console.error("[Redis] Client Error", err));
-redisClient.on("end", () => console.warn("[Redis] Connection closed"));
-redisClient.connect().catch(console.error);
+const MAX_HISTORY_MESSAGES = 10; // Keep last 5 exchanges (user + bot pairs)
 
 // Google Gemini
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -53,10 +47,11 @@ export async function handleChat(req: Request, res: Response) {
             return res.status(401).json({ error: "User not authenticated." });
         }
 
-        const { message } = req.body;
+        const { message, sessionId } = req.body;
         if (!message || typeof message !== "string") {
             return res.status(400).json({ error: "Missing or invalid 'message' in request body." });
         }
+        const chatSessionId: string = (typeof sessionId === "string" && sessionId.trim()) ? sessionId.trim() : "default";
 
         // --- Step 1 & 2: Fetch History & Generate Embedding (Parallelized) ---
         // Optimization: Redis fetch and embedding generation don't depend on each other.
@@ -83,34 +78,43 @@ export async function handleChat(req: Request, res: Response) {
             .map((payload, i) => `CONTEXT ${i + 1} (Source: ${payload?.source_url}):\n${payload?.text}`)
             .join("\n\n");
 
-        const systemPrompt = `
-        You are a highly analytical news assistant. Your job is to extract maximum value from the provided news context and deliver it to the user.
+        const systemInstruction = `You are Nexus, an AI news analyst. You MUST follow this exact output format for EVERY response.
 
-        RULES:
-        1. Answer the user's question based *only* on the provided RELEVANT NEWS CONTEXT. 
-        2. If the answer is not in the context, reply exactly with: "I could not find an answer in the provided news articles."
-        3. ALWAYS structure your responses using markdown formatting. 
-        4. Whenever possible, break your answer down into detailed, easy-to-read bullet points or numbered lists.
-        5. Be comprehensive and explain the "why" and "how" if the context provides it.
-        6. Vary your introductory phrases (e.g., "Based on the provided context,", "According to the articles,", "Here is the summary.").
+STRICT FORMAT RULES:
+- Start with ONE short sentence answering the question directly.
+- Then ALWAYS use a numbered list (1. 2. 3. 4. 5.) as the main body. Every response MUST have a numbered list. No exceptions.
+- Each numbered point should be 1-2 sentences. Bold the key fact at the start of each point.
+- After the numbered list, end with "**Bottom Line:** " followed by one summary sentence.
+- Use markdown: **bold** for emphasis, numbered lists for all main points. Do NOT use headers (no # or ##). Do NOT write long paragraphs.
+- Never use bullet points (- or *). ONLY use numbered lists (1. 2. 3.).
+- Never output URLs. Sources are handled separately by the system.
+- Only use information from the provided context. If no relevant context exists, say so briefly.
 
-        ---
-        CHAT HISTORY:
-        ${formattedHistory}
+EXAMPLE OUTPUT FORMAT:
+The EU has taken significant action against Apple over antitrust concerns.
 
-        ---
-        RELEVANT NEWS CONTEXT:
-        ${formattedContext}
+1. **€500M fine imposed** — The European Commission fined Apple for violating the Digital Markets Act by restricting app developers from linking to outside payment options.
+2. **App Store changes required** — Apple must allow third-party app stores and sideloading on iPhones sold in Europe by March 2025.
+3. **Apple's response** — The company has filed an appeal, arguing the regulations compromise user security and privacy.
+4. **Broader impact** — This sets a precedent for how regulators worldwide may approach Big Tech market dominance.
 
-        ---
-        USER'S QUESTION:
-        ${message}
-        `;
+**Bottom Line:** The EU is aggressively enforcing its new digital regulations, and Apple faces both financial penalties and mandatory changes to its business model in Europe.
+
+Follow this EXACT structure. Numbered list is MANDATORY.`;
+
+        const userPrompt = `CHAT HISTORY:
+${formattedHistory || "(none)"}
+
+NEWS CONTEXT:
+${formattedContext || "(none)"}
+
+QUESTION: ${message}`;
 
         // --- Step 5: Stream Response (SSE) ---
         const result = await genAI.models.generateContentStream({
             model: "gemini-2.5-flash",
-            contents: systemPrompt,
+            config: { systemInstruction: systemInstruction },
+            contents: userPrompt,
         });
 
         res.setHeader("Content-Type", "text/event-stream");
@@ -140,13 +144,16 @@ export async function handleChat(req: Request, res: Response) {
         // --- Step 7: Storage (MongoDB & Redis Parallelized) ---
         history.push({ sender: "user", text: message }, { sender: "bot", text: fullBotResponse });
 
+        // Trim to MAX_HISTORY_MESSAGES to prevent Redis context from growing unbounded
+        const trimmedHistory = history.slice(-MAX_HISTORY_MESSAGES);
+
         // Optimization: Save to MongoDB and Redis simultaneously without blocking the function's exit
         Promise.all([
             Chat.insertMany([
-                { userId: clerkUserId, role: "user", content: message },
-                { userId: clerkUserId, role: "bot", content: fullBotResponse, sources: uniqueSources },
+                { userId: clerkUserId, sessionId: chatSessionId, role: "user", content: message },
+                { userId: clerkUserId, sessionId: chatSessionId, role: "bot", content: fullBotResponse, sources: uniqueSources },
             ]),
-            redisClient.set(`context:${clerkUserId}`, JSON.stringify(history), { EX: 3600 })
+            redisClient.set(`context:${clerkUserId}`, JSON.stringify(trimmedHistory), { EX: 3600 })
         ]).catch((err) => console.error("[Storage Error] Failed to save chat data:", err));
 
     } catch (error) {

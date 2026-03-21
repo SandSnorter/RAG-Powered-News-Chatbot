@@ -1,9 +1,8 @@
 import { Outlet } from 'react-router-dom';
-import './index.css';
 
 function App() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#080b14]">
       <Outlet />
     </div>
   );

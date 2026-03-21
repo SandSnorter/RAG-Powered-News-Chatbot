@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import axios, { head } from 'axios';
+import axios from 'axios';
 import { QdrantClient } from "@qdrant/js-client-rest";
 import { v4 as uuidv4 } from 'uuid';
 import { getEmbedding } from './services/embedding.service';
@@ -89,7 +89,9 @@ async function main() {
     try {
         
         console.log("Resetting Qdrant Collection...");
-        await qdrant.recreateCollection(COLLECTION_NAME, {
+        // recreateCollection is deprecated — delete then create is the correct approach
+        try { await qdrant.deleteCollection(COLLECTION_NAME); } catch { /* doesn't exist yet — ok */ }
+        await qdrant.createCollection(COLLECTION_NAME, {
             vectors: {
                 size: 768, // Standard size for jina-embeddings-v2-base-en
                 distance: 'Cosine'

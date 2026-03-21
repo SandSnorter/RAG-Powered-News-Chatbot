@@ -2,22 +2,18 @@ import "dotenv/config"; // To ensure env vars load before other imports
 import express, { Request, Response } from "express";
 import mongoose from "mongoose";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import { clerkMiddleware, requireAuth } from "@clerk/express";
-import { createClient } from "redis";
 import { webhookHandler } from "./routes/webhook.route";
 import { handleChat } from "./services/chat.service";
-import { User } from "./models/User";
+import chatsRouter from "./routes/chats.route";
+import redisClient from "./lib/redis.client"; // Singleton — no second connection created
 
 const app = express();
 const port = process.env.PORT || 3001;
 
 // --- 1. Database & Cache Connections ---
-
-// Redis Client
-const redisClient = createClient({
-    url: process.env.REDIS_URL || "redis://localhost:6379",
-});
-redisClient.connect().catch((err) => console.error("[Redis] Connection error:", err));
 
 // MongoDB Connection
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/news_chatbot";
@@ -33,8 +29,24 @@ mongoose.connect(MONGO_URI).catch((err) => {
 
 // --- 2. Middleware & Webhooks ---
 
-app.use(cors());
+// Security headers
+app.use(helmet());
 
+// In dev: allow any localhost port (Vite can bump ports).
+// In prod: lock to ALLOWED_ORIGIN env var.
+const isDev = process.env.NODE_ENV !== "production";
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin) return callback(null, true); // allow server-to-server / curl
+        if (isDev && /^http:\/\/localhost:\d+$/.test(origin)) return callback(null, true);
+        if (origin === process.env.ALLOWED_ORIGIN) return callback(null, true);
+        callback(new Error(`CORS: origin '${origin}' not allowed`));
+    },
+    methods: ["GET", "POST", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+}));
+
+// Webhook must receive raw body — register before express.json()
 app.post(
     "/api/webhooks",
     express.raw({ type: "application/json" }),
@@ -45,9 +57,19 @@ app.post(
 app.use(express.json());
 app.use(clerkMiddleware());
 
+// Rate limiter: 20 chat requests per minute per IP
+const chatLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 20,
+    message: { error: "Too many requests. Please slow down." },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 // --- 3. Routes ---
 
-app.post("/api/chat", requireAuth(), handleChat);
+app.post("/api/chat", chatLimiter, requireAuth(), handleChat);
+app.use("/api/chats", requireAuth(), chatsRouter);
 
 // Health Check
 app.get("/health", (req: Request, res: Response) => {
@@ -57,21 +79,6 @@ app.get("/health", (req: Request, res: Response) => {
         redis: redisClient.isOpen ? "Connected" : "Disconnected",
         timestamp: new Date().toISOString(),
     });
-});
-
-// Temporary debug route to check user data
-app.get("/api/users", async (req: Request, res: Response) => {
-    try {
-        const users = await User.find({});
-        res.status(200).json({
-            count: users.length,
-            users: users,
-        });
-    } catch (error) {
-        res.status(500).json({ 
-            error: error instanceof Error ? error.message : "Failed to fetch users" 
-        });
-    }
 });
 
 // --- 4. Server Initialization ---

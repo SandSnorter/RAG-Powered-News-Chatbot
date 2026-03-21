@@ -52,12 +52,11 @@ export async function getEmbedding(input: string, task: JinaEmbeddingTask = 'ret
 
         return embeddings[0].embedding;
 
-    } catch (error: any) {
-        // Distinguish between an API failure and a network/code error
+    } catch (error: unknown) {
         if (axios.isAxiosError(error) && error.response) {
             console.error("❌ Jina API Error:", JSON.stringify(error.response.data, null, 2));
         } else {
-            console.error("Error getting embedding from Jina:", error.message);
+            console.error("Error getting embedding from Jina:", error instanceof Error ? error.message : error);
         }
         throw new Error("Failed to generate embedding.");
     }
