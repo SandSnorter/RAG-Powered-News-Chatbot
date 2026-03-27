@@ -17,7 +17,10 @@ interface Message {
 // Qdrant
 const QDRANT_URL = process.env.QDRANT_URL || "http://localhost:6333";
 const COLLECTION_NAME = "news_articles";
-const qdrant = new QdrantClient({ url: QDRANT_URL });
+const qdrantClient = new QdrantClient({
+    url: process.env.QDRANT_URL,
+    apiKey: process.env.QDRANT_API_KEY 
+});
 
 (async function checkQdrantHealth() {
     try {
