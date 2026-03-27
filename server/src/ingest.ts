@@ -8,8 +8,8 @@ const QDRANT_URL = process.env.QDRANT_URL || "http://localhost:6333";
 const NEWS_API_KEY = process.env.NEWS_API_KEY;
 const NEWS_API_URL = "https://newsapi.org/v2/everything";
 const qdrant = new QdrantClient({
-    url: process.env.QDRANT_URL,
-    apiKey: process.env.QDRANT_API_KEY 
+    url: process.env.QDRANT_URL as string,
+    apiKey: process.env.QDRANT_API_KEY as string 
 });
 const COLLECTION_NAME = "news_articles";
 
