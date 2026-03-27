@@ -11,6 +11,9 @@ import chatsRouter from "./routes/chats.route";
 import redisClient from "./lib/redis.client"; // Singleton — no second connection created
 
 const app = express();
+
+app.set('trust proxy', 1);
+
 const port = process.env.PORT || 3001;
 
 // --- 1. Database & Cache Connections ---
