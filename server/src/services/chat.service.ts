@@ -17,9 +17,9 @@ interface Message {
 // Qdrant
 const QDRANT_URL = process.env.QDRANT_URL || "http://localhost:6333";
 const COLLECTION_NAME = "news_articles";
-const qdrantClient = new QdrantClient({
-    url: process.env.QDRANT_URL,
-    apiKey: process.env.QDRANT_API_KEY 
+const qdrant = new QdrantClient({
+    url: process.env.QDRANT_URL as string,
+    apiKey: process.env.QDRANT_API_KEY as string 
 });
 
 (async function checkQdrantHealth() {
@@ -61,7 +61,7 @@ export async function handleChat(req: Request, res: Response) {
         const [historyJSON, queryEmbedding] = await Promise.all([
             redisClient.get(`context:${clerkUserId}`),
             getEmbedding(message, "retrieval.query")
-        ]);
+        ]) as [string | null, number[]];
 
         const history: Message[] = historyJSON ? JSON.parse(historyJSON) : [];
 
