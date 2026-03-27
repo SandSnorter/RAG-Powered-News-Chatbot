@@ -7,7 +7,10 @@ import { getEmbedding } from './services/embedding.service';
 const QDRANT_URL = process.env.QDRANT_URL || "http://localhost:6333";
 const NEWS_API_KEY = process.env.NEWS_API_KEY;
 const NEWS_API_URL = "https://newsapi.org/v2/everything";
-const qdrant = new QdrantClient({ url: QDRANT_URL });
+const qdrantClient = new QdrantClient({
+    url: process.env.QDRANT_URL,
+    apiKey: process.env.QDRANT_API_KEY 
+});
 const COLLECTION_NAME = "news_articles";
 
 interface NewsArticle {
