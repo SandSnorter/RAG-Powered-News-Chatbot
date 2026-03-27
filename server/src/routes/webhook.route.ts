@@ -44,7 +44,7 @@ export const webhookHandler = async (req: Request, res: Response) => {
                         lastName: last_name,
                         photoUrl: image_url
                     },
-                    { upsert: true, new: true }
+                    { upsert: true, returnDocument: 'after' }
                 );
                 console.log(`[Webhook] ${evt.type}: ${email} (${id})`);
                 break;
