@@ -73,7 +73,7 @@ export async function handleChat(req: Request, res: Response) {
         });
 
         // Safely extract payloads, filtering out undefined
-        const contextPayloads = contextResults.map((item) => item.payload).filter(Boolean);
+        const contextPayloads = contextResults.map((item: any) => item.payload).filter(Boolean);
 
         // --- Step 4: Construct Prompt ---
         const formattedHistory = history.map((msg) => `${msg.sender}: ${msg.text}`).join("\n");
